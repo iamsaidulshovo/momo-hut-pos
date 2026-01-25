@@ -810,13 +810,12 @@ function lockSystem() {
 
 function unlockSystem() {
     const input = document.getElementById('admin-pin-input').value;
-    if (input === ADMIN_PIN) {
-        isLocked = false;
+    if (input === (localStorage.getItem('momo_admin_pin') || "2025")) {
         localStorage.setItem('momo_locked', 'false');
         document.getElementById('pin-overlay').style.display = 'none';
-        document.getElementById('admin-pin-input').value = ""; // ক্লিয়ার ইনপুট
+        document.getElementById('admin-pin-input').value = "";
     } else {
-        alert("ভুল পিন! প্রবেশাধিকার সংরক্ষিত।");
+        alert("ভুল পিন!");
         document.getElementById('admin-pin-input').value = "";
     }
 }
@@ -874,9 +873,17 @@ init = function() {
     checkSecurity();
 };
 function checkSecurity() {
-    // অ্যাপ ওপেন হলেই স্ক্রিন লক দেখাবে
-    document.getElementById('pin-overlay').style.display = 'flex';
-    localStorage.setItem('momo_locked', 'true'); // এটি অ্যাপের লক স্ট্যাটাস সেভ রাখবে
+    const isLocked = localStorage.getItem('momo_locked') === 'true';
+    const currentMode = localStorage.getItem('momo_user_mode') || "Admin";
+
+    // যদি স্টাফ মোড থাকে, তবে রিফ্রেশে পিন চাইবে না
+    if (currentMode === "Staff") {
+        document.getElementById('pin-overlay').style.display = 'none';
+        localStorage.setItem('momo_locked', 'false');
+    } else if (isLocked) {
+        // শুধুমাত্র অ্যাডমিন মোডে লক থাকলে পিন চাইবে
+        document.getElementById('pin-overlay').style.display = 'flex';
+    }
 }
 // ১. ইউজার মোড কনফিগারেশন
 let currentUserMode = localStorage.getItem('momo_user_mode') || "Admin"; // ডিফল্ট অ্যাডমিন
@@ -955,4 +962,13 @@ init = function() {
     baseInitWithUser();
     applyUserRestrictions();
 };
+// অন্য ট্যাব বা স্ক্রিনে ডাটা চেঞ্জ হলে অটো-রিফ্রেশ
+window.addEventListener('storage', (e) => {
+    if (e.key === 'momo_history') {
+        // যদি ড্যাশবোর্ড পেজ ওপেন থাকে, তবে ডাটা রিফ্রেশ করো
+        if (document.getElementById('active-dashboard').classList.contains('active')) {
+            renderActiveDashboard();
+        }
+    }
+});
 init();
