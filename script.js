@@ -178,40 +178,55 @@ function saveOrder() {
     const nameEl = document.getElementById('customer-name');
     const phoneEl = document.getElementById('customer-phone');
     const tableEl = document.getElementById('table-no');
+    const prepTime = parseInt(document.getElementById('prep-time')?.value) || 15;
 
     const disc = parseFloat(document.getElementById('discount')?.value) || 0;
     const cont = parseFloat(document.getElementById('container')?.value) || 0;
     const deli = parseFloat(document.getElementById('delivery')?.value) || 0;
 
+    // ১. প্রতিটি আইটেমের জন্য ডিফল্ট 'pending' স্ট্যাটাস যোগ করা
+    const processedItems = JSON.parse(JSON.stringify(cur.cart));
+    for (let id in processedItems) {
+        processedItems[id].itemStatus = 'pending'; 
+    }
+
+    // ২. অর্ডার রেকর্ড তৈরি (নতুন ট্র্যাকিং ডাটা সহ)
     const record = { 
         id: orderID, 
+        status: 'active', // এটি ড্যাশবোর্ডে অর্ডারটি দেখাবে
         table: tableEl?.value || "Takeaway",
         customerName: nameEl?.value || "Guest",
         customerPhone: phoneEl?.value || "N/A",
-        items: JSON.parse(JSON.stringify(cur.cart)), 
+        items: processedItems, 
         total: cur.total, 
         subtotal: cur.subtotal,
         discount: disc,
         container: cont,
         delivery: deli,
         date: new Date().toISOString().split('T')[0], 
-        time: new Date().toLocaleTimeString() 
+        time: new Date().toLocaleTimeString(),
+        endTime: new Date().getTime() + (prepTime * 60000) // টাইমার সেট করা
     };
 
-    // History save kora
+    // ৩. হিস্টোরি এবং লাস্ট আইডি সেভ করা
     let history = JSON.parse(localStorage.getItem('momo_history') || "[]");
     history.unshift(record);
     localStorage.setItem('momo_history', JSON.stringify(history));
     localStorage.setItem('momo_lastID', orderID++);
     
-    // Loyallity Point Update (Bill-er poriman onujaye)
+    // ৪. লয়্যালিটি পয়েন্ট আপডেট
     if (record.customerPhone !== "N/A") {
         updateCustomerLoyalty(record.customerPhone, record.customerName, record.total);
     }
 
+    // ৫. প্রিন্ট এবং ক্লিয়ার করা
     printReceipts(record);
     resetCurrentOrder();
-    alert("অর্ডার সফলভাবে সেভ হয়েছে!");
+    
+    // ড্যাশবোর্ড আপডেট করা
+    if(typeof renderActiveDashboard === "function") renderActiveDashboard();
+    
+    alert("অর্ডার সফলভাবে সেভ হয়েছে!");
 }
 
 function updateCustomerLoyalty(phone, name, billAmount) {
@@ -499,20 +514,54 @@ function renderActiveDashboard() {
     const grid = document.getElementById('active-orders-grid');
     const history = JSON.parse(localStorage.getItem('momo_history')) || [];
     // শুধু 'active' স্ট্যাটাস অর্ডারগুলো দেখাবে
-    const activeOrders = history.filter(o => o.status === 'active').slice(0, 6);
+    const activeOrders = history.filter(o => o.status === 'active');
     
     grid.innerHTML = activeOrders.length === 0 ? "<p style='text-align:center;'>No running orders</p>" : "";
     
-    activeOrders.forEach((o, index) => {
-        const itemNames = Object.keys(o.items).map(k => `${o.items[k].qty}x ${k}`).join(', ');
+    activeOrders.forEach((o) => {
+        let itemsHtml = "";
+        
+        // প্রতিটি আইটেমের জন্য আলাদা চেক বক্স এবং স্ট্যাটাস তৈরি
+        for (let itemId in o.items) {
+            const item = o.items[itemId];
+            const isDone = item.itemStatus === 'served';
+            
+            itemsHtml += `
+                <div style="display:flex; justify-content:space-between; align-items:center; background:${isDone ? '#d1fadf' : '#fff'}; padding:8px; border-radius:8px; margin-bottom:5px; border:1px solid #eee;">
+                    <span style="font-size:13px; ${isDone ? 'text-decoration:line-through; color:gray;' : 'color:#2f3542; font-weight:bold;'}">
+                        ${item.name} (${item.type})
+                    </span>
+                    ${!isDone ? 
+                        `<button onclick="markItemServed(${o.id}, '${itemId}')" style="background:#2ed573; color:white; border:none; padding:4px 10px; border-radius:5px; cursor:pointer; font-size:11px;">Done</button>` 
+                        : '<span style="color:#12b76a; font-weight:bold;">✅</span>'}
+                </div>`;
+        }
+
         grid.innerHTML += `
-            <div class="order-card" id="card-${index}">
-                <span class="timer-tag" data-end="${o.endTime}">--:--</span>
-                <b>#${o.id} - Table: ${o.table || 'N/A'}</b>
-                <p style="font-size:12px; margin:5px 0; color:#555;">${itemNames}</p>
-                <button onclick="markAsServed(${o.id})" style="width:100%; background:#2ed573; color:white; border:none; padding:8px; border-radius:5px; cursor:pointer;">Ready / Served</button>
+            <div class="order-card" style="border-left: 6px solid #ff4757; margin-bottom:20px; padding:15px; background:white; border-radius:15px; box-shadow:0 4px 10px rgba(0,0,0,0.05);">
+                <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                    <b style="font-size:16px;">#${o.id} - Table: ${o.table || 'N/A'}</b>
+                    <span class="timer-tag" data-end="${o.endTime}" style="background:#f1f2f6; padding:3px 8px; border-radius:6px; font-weight:bold;">--:--</span>
+                </div>
+                <div style="margin-top:10px;">${itemsHtml}</div>
+                <button onclick="markAsServed(${o.id})" style="width:100%; margin-top:12px; background:#2f3542; color:white; border:none; padding:10px; border-radius:8px; cursor:pointer; font-weight:bold; font-size:14px;">
+                    পুরো অর্ডার কমপ্লিট
+                </button>
             </div>`;
     });
+}
+
+// আলাদা আইটেম মার্ক করার নতুন ফাংশন
+function markItemServed(orderId, itemId) {
+    let history = JSON.parse(localStorage.getItem('momo_history')) || [];
+    const orderIdx = history.findIndex(o => o.id == orderId);
+    
+    if (orderIdx !== -1) {
+        if (!history[orderIdx].items[itemId]) return;
+        history[orderIdx].items[itemId].itemStatus = 'served'; 
+        localStorage.setItem('momo_history', JSON.stringify(history));
+        renderActiveDashboard(); // ড্যাশবোর্ড আপডেট
+    }
 }
 
 // অর্ডার কমপ্লিট করার ফাংশন
