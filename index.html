@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MOMO HUT POS - Pro</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div id="mySidebar" class="sidebar">
+    <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">×</a>
+    <div class="sidebar-header">MOMO HUT</div>
+    <div style="padding: 15px; border-bottom: 1px solid #444; margin-bottom: 10px;">
+    <span style="color: #eee; font-size: 12px;">Current Mode:</span>
+    <b id="current-mode-display" style="color: #2ed573; display: block;">Admin</b>
+    <button onclick="switchUserMode()" style="margin-top: 5px; background: #ff4757; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 11px;">Switch Mode</button>
+</div>
+    <a href="#" onclick="showPage('active-dashboard'); closeNav()">🔥 Active Orders</a>
+    <a href="#" onclick="showPage('order-page'); closeNav()">📝 New Order</a>
+    <a href="#" onclick="showPage('history-page'); closeNav()">📜 History</a>
+    <a href="#" onclick="showPage('report-page'); closeNav()">📊 Reports</a>
+    <a href="#" onclick="showPage('expense-page'); closeNav()">💸 Expenses</a>
+    <a href="#" onclick="showPage('staff-list-page'); closeNav()">👥 Staff Management</a>
+    <a href="#" onclick="lockSystem(); closeNav()">🔒 Lock System</a>
+    <a href="#" onclick="verifyAction(() => changeAdminPin()); closeNav()">🔑 Change Admin PIN</a>
+    </div>
+
+<div id="pin-overlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:9999; flex-direction:column; align-items:center; justify-content:center; color:white;">
+    <h2 style="color:#ff4757;">MOMO HUT SECURITY</h2>
+    <p>Enter Admin PIN to Unlock</p>
+    <input type="password" id="admin-pin-input" placeholder="****" maxlength="4" style="font-size:30px; text-align:center; width:120px; padding:10px; border-radius:10px; border:none; margin-bottom:20px;">
+    <button onclick="unlockSystem()" style="background:#2ed573; color:white; border:none; padding:10px 40px; border-radius:10px; cursor:pointer; font-weight:bold;">UNLOCK</button>
+</div>
+
+
+<div class="top-header">
+    <button class="openbtn" onclick="openNav()">☰</button>
+    <span class="header-title">MOMO HUT</span>
+    <span id="live-clock" style="margin-left: auto; font-size: 12px; color: #666;"></span>
+</div>
+
+    <div class="header-logo">
+            <img src="1000017083.jpg" alt="Logo" class="app-logo">
+            <h1 class="brand-name">MOMO HUT</h1>
+        </div>
+
+<div class="card">
+    <div class="tabs main-nav">
+        <button class="tab-btn active" onclick="showPage('order-page', this)">অর্ডার</button>
+        <button class="tab-btn" onclick="showPage('history-page', this)">হিস্টোরি</button>
+        <button class="tab-btn" onclick="showPage('report-page', this)">রিপোর্ট</button>
+        <button class="tab-btn" onclick="showPage('expense-page', this)">খরচ</button>
+    </div>
+    <div id="active-dashboard" class="page active">
+    <h3 style="text-align:center; color:#2ed573;">🔥 Running Orders</h3>
+    <div id="active-orders-grid">
+        </div>
+     </div>
+     <div id="staff-list-page" class="page">
+    <h3 class="section-title">👥 Staff List</h3>
+    <div class="report-box" style="margin-bottom:15px; background:white;">
+        <input type="text" id="new-staff-name" placeholder="Staff Name" style="width:45%; padding:8px;">
+        <input type="text" id="new-staff-post" placeholder="Post (e.g. Chef)" style="width:45%; padding:8px;">
+        <input type="email" id="new-staff-email" placeholder="Email Address" style="width:92%; margin-top:10px; padding:8px;">
+        <button onclick="addNewStaffProfile()" style="width:100%; margin-top:10px; background:#2ed573; color:white; border:none; padding:10px; border-radius:8px;">+ Add New Staff</button>
+    </div>
+    <div id="staff-name-list"></div>
+     </div>
+
+<div id="staff-detail-page" class="page">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+        <button onclick="showPage('staff-list-page')" style="background:#eee; border:none; padding:5px 10px; border-radius:5px;">⬅ Back</button>
+        <button onclick="sendStaffEmail()" style="background:#007bff; color:white; border:none; padding:8px 15px; border-radius:8px;">📩 Mail Full Sheet</button>
+    </div>
+    <h3 id="display-staff-name" style="margin-top:15px; color:#ff4757;"></h3>
+    <p id="display-staff-post" style="font-size:12px; color:#666;"></p>
+
+    <div style="overflow-x:auto; background:white; border-radius:10px; padding:10px;">
+        <table style="width:100%; border-collapse:collapse; font-size:12px; text-align:center;">
+            <thead>
+                <tr style="background:#f1f2f6;">
+                    <th style="border:1px solid #ddd; padding:5px;">Date</th>
+                    <th style="border:1px solid #ddd; padding:5px;">Status</th>
+                    <th style="border:1px solid #ddd; padding:5px;">In</th>
+                    <th style="border:1px solid #ddd; padding:5px;">Out</th>
+                    <th style="border:1px solid #ddd; padding:5px;">Break</th>
+                    <th style="border:1px solid #ddd; padding:5px;">Note</th>
+                </tr>
+            </thead>
+            <tbody id="staff-monthly-sheet"></tbody>
+        </table>
+    </div>
+    <button onclick="deleteStaffProfile()" style="width:100%; margin-top:20px; background:#ff4757; color:white; border:none; padding:10px; border-radius:8px; font-weight:bold;">🗑 Delete Staff Profile</button>
+</div>
+
+
+
+    <div id="order-page" class="page active">
+        
+        <input type="text" id="menu-search-input" class="search-input" placeholder="খাবার খুঁজুন..." oninput="filterMenu()">
+
+        <div class="multi-order-wrapper">
+            <div id="active-order-tabs" class="multi-tabs"></div>
+            <button class="add-tab-btn" onclick="addNewTab()">+</button>
+        </div>
+
+        <p id="order-display-id" style="text-align:center; font-weight:bold;"></p>
+        <div id="menu-container"></div>
+        
+         <button class="reset-btn-main" onclick="resetCurrentOrder()">ক্লিয়ার করুন</button>
+         <div id="cart-items-display" style="background: white; border-radius: 12px; padding: 10px; margin-bottom: 10px; border: 1px solid #ddd;">
+    <p style="text-align: center; color: #666; font-size: 14px;">অর্ডার লিস্ট (ডাইন-ইন/পার্সেল)</p>
+    <div style="display: flex; gap: 5px; margin-bottom: 10px;">
+        <button onclick="bulkSetType('Dine-in')" style="flex:1; font-size:11px; padding:5px; background:#2ed573; color:white; border:none; border-radius:5px; cursor:pointer;">All Dine-in 🍽️</button>
+        <button onclick="bulkSetType('Parcel')" style="flex:1; font-size:11px; padding:5px; background:#ff9f43; color:white; border:none; border-radius:5px; cursor:pointer;">All Parcel 📦</button>
+    </div>
+    <div id="cart-rows"></div>
+         </div>
+         
+
+        <div class="summary-section">
+            <div class="input-row" style="border-bottom: 1px dashed #555; padding-bottom: 10px; margin-bottom: 10px;">
+                <label style="font-weight:bold;">টেবিল / টোকেন:</label>
+                <input type="text" id="table-no" placeholder="Ex: 5 or T-10" style="text-align:center;">
+            </div>
+
+            <div class="input-row" style="background:#f1f2f6; padding:10px; border-radius:10px; margin-bottom:10px;">
+    <label style="color:#333; font-weight:bold;">⏱️ রান্নার সময়:</label>
+    <select id="prep-time" style="width: 100px; border: 1px solid #ccc; border-radius: 5px;">
+        <option value="5">৫ মিনিট</option>
+        <option value="10">১০ মিনিট</option>
+        <option value="15" selected>১৫ মিনিট</option>
+        <option value="20">২০ মিনিট</option>
+        <option value="30">৩০ মিনিট</option>
+    </select>
+</div>
+
+            <div class="input-row" style="font-size: 16px;">
+                <label>সাব-টোটাল:</label>
+                <span style="font-weight:bold;"><span id="subtotal">0</span> ৳</span>
+            </div>
+
+            <div class="input-row">
+                <label>ডিসকাউন্ট (-):</label>
+                <input type="number" id="discount" value="0" oninput="refreshOrderUI()">
+            </div>
+            <div class="input-row">
+                <label>কন্টেইনার (+):</label>
+                <input type="number" id="container" value="0" oninput="refreshOrderUI()">
+            </div>
+            <div class="input-row">
+                <label>ডেলিভারি (+):</label>
+                <input type="number" id="delivery" value="0" oninput="refreshOrderUI()">
+            </div>
+
+            <div style="background: #ff4757; color: white; padding: 10px; border-radius: 8px; text-align: center; margin: 15px 0; font-size: 20px; font-weight: bold;">
+                মোট বিল: <span id="total">0</span> TK
+            </div>
+
+            <div class="input-row">
+                <label>কাস্টমার দিল:</label>
+                <input type="number" id="cash" placeholder="0" oninput="calcChange()">
+            </div>
+            
+            <div class="quick-cash" style="display: flex; gap: 5px; margin-bottom: 10px;">
+                <button onclick="setCash(100)" style="flex:1; padding:5px; cursor:pointer;">100</button>
+                <button onclick="setCash(500)" style="flex:1; padding:5px; cursor:pointer;">500</button>
+                <button onclick="setCash(1000)" style="flex:1; padding:5px; cursor:pointer;">1000</button>
+            </div>
+
+            <p style="text-align:right; font-weight:bold; font-size: 16px; margin: 0;">ফেরত: <span id="change">0</span> TK</p>
+            <div class="report-box" style="background: #f8f9fa; padding: 12px; border-radius: 10px; margin-bottom: 10px; border: 1px solid #ddd;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <span id="customer-status" style="font-size: 10px; padding: 2px 8px; border-radius: 10px; background: #eee;">New Customer</span>
+                     <span id="loyalty-info" style="font-size: 12px; font-weight: bold; color: #2ed573;"></span>
+                </div>
+                <div class="input-row" style="margin-bottom: 5px;">
+                    <label style="font-size: 12px;">Mobile:</label>
+                    <input type="text" id="customer-phone" placeholder="017xxxxxxxx" oninput="checkLoyalty()" style="width: 60%; padding: 6px; border-radius: 5px; border: 1px solid #ccc;">
+                </div>
+                <div class="input-row">
+                    <label style="font-size: 12px;">Name:</label>
+                    <input type="text" id="customer-name" placeholder="Customer Name" style="width: 60%; padding: 6px; border-radius: 5px; border: 1px solid #ccc;">
+                </div>
+            </div>
+             </div>
+        
+        <button class="confirm-btn-big" onclick="saveOrder()">CONFIRM & PRINT (2 COPIES)</button>
+    </div>
+
+    <div id="expense-page" class="page">
+        <h3 class="section-title">💸 খরচ এন্ট্রি</h3>
+        <div class="report-box">
+            <div class="input-row"><label>তারিখ:</label><input type="date" id="exp-date"></div>
+            <div class="input-row"><label>নাম:</label><input type="text" id="exp-name" placeholder="যেমন: চিকেন"></div>
+            <div class="input-row"><label>পরিমাণ:</label><input type="text" id="exp-qty" placeholder="৫ কেজি"></div>
+            <div class="input-row"><label>দাম:</label><input type="number" id="exp-price" placeholder="৳"></div>
+            <button class="confirm-btn-big" style="background:#ff4757;" onclick="addExpense()">খরচ সেভ করুন</button>
+        </div>
+        <div id="today-expense-summary" class="total-bar" style="background:#2f3542; margin-top:10px;">আজকের খরচ: 0৳</div>
+        <div id="today-expense-list" class="history-container"></div>
+    </div>
+
+    <div id="history-page" class="page">
+        <div class="total-bar">আজকের বিক্রি: <span id="today-total-display">0</span> TK</div>
+        <div id="history-list" class="history-container"></div>
+        <button class="reset-btn-main" style="background:#dc3545; color:white;" onclick="clearHistory()">হিস্টোরি মুছুন</button>
+    </div>
+
+    <div id="report-page" class="page">
+        <h3 class="section-title">📊 সেলস ও লাভ রিপোর্ট</h3>
+        <div class="chart-container"><canvas id="mainChart"></canvas></div>
+        <div id="stats-summary" class="stats-grid"></div>
+        <div class="report-box">
+            <h4>🔍 কাস্টম তারিখ রিপোর্ট</h4>
+            <input type="date" id="search-date" class="date-input">
+            <button class="confirm-btn-big" style="background:#2f3542; padding:10px;" onclick="showCustomReport()">সার্চ করুন</button>
+            <div id="custom-report-result" style="margin-top:15px;"></div>
+        </div>
+    </div>
+</div>
+
+<iframe id="printFrame" style="display:none;"></iframe>
+<script src="script.js"></script>
+</body>
+</html>
