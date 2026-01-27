@@ -565,8 +565,9 @@ function markItemServed(orderId, itemId) {
     if (orderIdx !== -1) {
         if (!history[orderIdx].items[itemId]) return;
         history[orderIdx].items[itemId].itemStatus = 'served'; 
+        // ডাটা সেভ করলে অটোমেটিক ক্যাশিয়ারের স্ক্রিনে সিঙ্ক হবে
         localStorage.setItem('momo_history', JSON.stringify(history));
-        renderActiveDashboard(); // ড্যাশবোর্ড আপডেট
+        renderActiveDashboard(); 
     }
 }
 
@@ -803,8 +804,17 @@ let isLocked = localStorage.getItem('momo_locked') === 'true';
 
 // ২. সিস্টেম লক এবং আনলক লজিক
 function checkSecurity() {
-    if (isLocked) {
+    const isLocked = localStorage.getItem('momo_locked') === 'true';
+    const currentMode = localStorage.getItem('momo_user_mode') || "Admin";
+
+    // ✅ স্টাফ মোডে থাকলে পিন দেখাবে না
+    if (currentMode === "Staff") {
+        document.getElementById('pin-overlay').style.display = 'none';
+        localStorage.setItem('momo_locked', 'false'); 
+    } else if (isLocked) {
         document.getElementById('pin-overlay').style.display = 'flex';
+    } else {
+        document.getElementById('pin-overlay').style.display = 'none';
     }
 }
 
@@ -977,23 +987,26 @@ window.addEventListener('storage', (e) => {
         }
     }
 });
-// ✅ Real-time Sync: Onno tab ba screen-e change hole auto refresh
+// ✅ Real-time Sync: অন্য স্ক্রিনে ডাটা আপডেট হলে সাথে সাথে রিফ্রেশ হবে
 window.addEventListener('storage', (e) => {
-    // Jodi order history update hoy
     if (e.key === 'momo_history') {
-        // Jodi Kitchen (Active Dashboard) page-e thaka hoy, tobe grid refresh hobe
+        // যদি কিচেন ড্যাশবোর্ডে থাকা হয়
         if (document.getElementById('active-dashboard').classList.contains('active')) {
             renderActiveDashboard();
         }
-        // Jodi History page-e thaka hoy, tobe list refresh hobe
+        // যদি হিস্টোরি পেজে থাকা হয়
         if (document.getElementById('history-page').classList.contains('active')) {
             loadHistory();
         }
     }
     
-    // Security ba Mode change holeo sync hobe
+    // মোড চেঞ্জ হলে পুরো অ্যাপ রিফ্রেশ হবে
     if (e.key === 'momo_user_mode' || e.key === 'momo_locked') {
         location.reload(); 
     }
 });
-init();
+
+// মেইন স্টার্ট ফাংশন
+window.onload = function() {
+    init();
+};
