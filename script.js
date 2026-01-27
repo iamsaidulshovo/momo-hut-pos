@@ -227,7 +227,13 @@ function saveOrder() {
     if(typeof renderActiveDashboard === "function") renderActiveDashboard();
     
     alert("অর্ডার সফলভাবে সেভ হয়েছে!");
+    // saveOrder() function-er sheshe jekhane localStorage-e save korchen
+localStorage.setItem('momo_history', JSON.stringify(history)); 
+
+// ✅ Load kora jate cashier-er screen-eo update hoye jay
+if(typeof renderActiveDashboard === "function") renderActiveDashboard();
 }
+
 
 function updateCustomerLoyalty(phone, name, billAmount) {
     let customers = JSON.parse(localStorage.getItem('momo_customers') || "{}");
@@ -969,6 +975,25 @@ window.addEventListener('storage', (e) => {
         if (document.getElementById('active-dashboard').classList.contains('active')) {
             renderActiveDashboard();
         }
+    }
+});
+// ✅ Real-time Sync: Onno tab ba screen-e change hole auto refresh
+window.addEventListener('storage', (e) => {
+    // Jodi order history update hoy
+    if (e.key === 'momo_history') {
+        // Jodi Kitchen (Active Dashboard) page-e thaka hoy, tobe grid refresh hobe
+        if (document.getElementById('active-dashboard').classList.contains('active')) {
+            renderActiveDashboard();
+        }
+        // Jodi History page-e thaka hoy, tobe list refresh hobe
+        if (document.getElementById('history-page').classList.contains('active')) {
+            loadHistory();
+        }
+    }
+    
+    // Security ba Mode change holeo sync hobe
+    if (e.key === 'momo_user_mode' || e.key === 'momo_locked') {
+        location.reload(); 
     }
 });
 init();
