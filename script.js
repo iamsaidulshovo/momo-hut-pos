@@ -988,24 +988,33 @@ window.addEventListener('storage', (e) => {
     }
 });
 // ✅ Real-time Sync: অন্য স্ক্রিনে ডাটা আপডেট হলে সাথে সাথে রিফ্রেশ হবে
+// ✅ রিয়েল-টাইম সিঙ্ক ও সাউন্ড নোটিফিকেশন
 window.addEventListener('storage', (e) => {
     if (e.key === 'momo_history') {
-        // যদি কিচেন ড্যাশবোর্ডে থাকা হয়
-        if (document.getElementById('active-dashboard').classList.contains('active')) {
-            renderActiveDashboard();
+        // নতুন ডাটা আসলে চেক করা হচ্ছে
+        const dashboard = document.getElementById('active-dashboard');
+        
+        if (dashboard && dashboard.classList.contains('active')) {
+            renderActiveDashboard(); // ড্যাশবোর্ড রিফ্রেশ করা
+            
+            // নতুন অর্ডার আসলে সাউন্ড বাজানো
+            const beep = document.getElementById('order-beep-sound');
+            if (beep) {
+                beep.play().catch(err => console.log("সাউন্ড বাজাতে ইউজার পারমিশন প্রয়োজন।"));
+            }
         }
-        // যদি হিস্টোরি পেজে থাকা হয়
+        
+        // হিস্টোরি পেজে থাকলে সেটিও রিফ্রেশ করা
         if (document.getElementById('history-page').classList.contains('active')) {
             loadHistory();
         }
     }
     
-    // মোড চেঞ্জ হলে পুরো অ্যাপ রিফ্রেশ হবে
+    // মোড চেঞ্জ হলে রিফ্রেশ করা
     if (e.key === 'momo_user_mode' || e.key === 'momo_locked') {
         location.reload(); 
     }
 });
-
 // মেইন স্টার্ট ফাংশন
 window.onload = function() {
     init();
