@@ -16,15 +16,37 @@ let orderID = localStorage.getItem('momo_lastID') ? parseInt(localStorage.getIte
 let mainChart = null;
 
 function init() {
-    // অ্যাপের অন্যান্য জিনিস লোড হওয়ার আগে সিকিউরিটি চেক করবে
     checkSecurity(); 
-
-    // আপনার আগের কোডগুলো নিচে থাকবে
     renderMenu();
     renderTabs();
-    const dateEl = document.getElementById('exp-date');
-    if(dateEl) dateEl.value = new Date().toISOString().split('T')[0];
     refreshOrderUI();
+    applyUserRestrictions();
+    
+    // ✅ ফায়ারবেস ছাড়া রিয়েল-টাইম আপডেট ও বিপ সাউন্ড
+    window.addEventListener('storage', (e) => {
+        if (e.key === 'momo_history') {
+            const currentHistory = JSON.parse(e.oldValue || "[]");
+            const newHistory = JSON.parse(e.newValue || "[]");
+            
+            // কিচেন ড্যাশবোর্ড একটিভ থাকলে এবং নতুন অর্ডার আসলে বিপ বাজবে
+            const dashboard = document.getElementById('active-dashboard');
+            if (newHistory.length > currentHistory.length && dashboard && dashboard.classList.contains('active')) {
+                const beep = document.getElementById('order-beep-sound');
+                if (beep) {
+                    beep.currentTime = 0; // সাউন্ড রিসেট
+                    beep.play().catch(err => console.log("সাউন্ডের জন্য ইউজার ক্লিক প্রয়োজন।"));
+                }
+            }
+            
+            renderActiveDashboard();
+            loadHistory();
+        }
+        
+        // মোড বা সিকিউরিটি পরিবর্তন হলে সিঙ্ক করা
+        if (e.key === 'momo_user_mode' || e.key === 'momo_locked') {
+            location.reload(); 
+        }
+    });
 }
 
 function renderMenu() {
@@ -572,15 +594,15 @@ function markItemServed(orderId, itemId) {
 
 // অর্ডার কমপ্লিট করার ফাংশন
 function markAsServed(id) {
-    let history = JSON.parse(localStorage.getItem('momo_history')) || [];
+    let history = JSON.parse(localStorage.getItem('momo_history') || "[]");
     const idx = history.findIndex(o => o.id == id);
     if (idx !== -1) {
-        history[idx].status = 'completed'; // ড্যাশবোর্ড থেকে সরিয়ে দেওয়া
-        localStorage.setItem('momo_history', JSON.stringify(history));
+        history[idx].status = 'completed';
+        localStorage.setItem('momo_history', JSON.stringify(history)); // এটি অটোমেটিক অন্য স্ক্রিন আপডেট করবে
         renderActiveDashboard();
+        alert("অর্ডার #" + id + " রেডি! ✅");
     }
 }
-
 // টাইমার আপডেট লজিক
 setInterval(() => {
     const now = new Date().getTime();
